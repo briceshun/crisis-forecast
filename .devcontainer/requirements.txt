@@ -1,3 +1,4 @@
 ipykernel==6.15.3
 pandas==1.4.4
 requests==2.28.1
+google-api-python-client==2.61.0
