@@ -10,9 +10,11 @@ def youtubeSearch(query,
                 results=50,
                 start='1970-01-01',
                 end=(dt.today() + timedelta(days=1)).strftime('%Y-%m-%d'),
-                pages=1,
-                fields='nextPageToken,items(id(videoId),snippet(publishedAt,channelId,channelTitle,title))'
+                pages=1
                 ):
+                
+    # Default params
+    fields = 'nextPageToken,items(id(videoId),snippet(publishedAt,channelId,channelTitle,title))'
 
     # API client
     youtube = googleapiclient.discovery.build(

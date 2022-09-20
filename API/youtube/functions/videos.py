@@ -13,11 +13,15 @@ def youtubeVideos(vidId):
                     developerKey = api_key
                     )
 
+    # Default params
+    fields = 'nextPageToken, items(id, statistics)'
+
     # Initial reponse
     response = youtube.videos().list(
             part="statistics,contentDetails",
             id=','.join(vidId),
-            fields='nextPageToken, items(id, statistics)'
+            maxResults=100,
+            fields=fields
             ).execute()
 
     # Clean response
@@ -29,7 +33,8 @@ def youtubeVideos(vidId):
         response = youtube.videos().list(
             part="statistics,contentDetails",
             id=','.join(vidId),
-            fields='nextPageToken, items(id, statistics)',
+            maxResults=100,
+            fields=fields,
             pageToken =  response['nextPageToken']
             ).execute()
         # Clean response and add to data
