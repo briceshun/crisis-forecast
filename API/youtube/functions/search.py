@@ -3,25 +3,16 @@ import googleapiclient.discovery
 from datetime import datetime as dt
 from datetime import timedelta
 from setup import *
+from utils import *
 
 # %% Youtube Search API Function
 def youtubeSearch(query,
-                  results=50,
-                  start='1970-01-01',
-                  end=(dt.today() + timedelta(days=1)).strftime('%Y-%m-%d'),
-                  pages=1,
-                  fields='nextPageToken,items(id(videoId),snippet(publishedAt,channelId,channelTitle,title))'
-                  ):
-
-    # Clean up function
-    def cleanUp(data):
-        output = []
-        # Loop over all items in response
-        for item in data['items']:
-            dict = item['id'] | item['snippet']
-            output.append(dict)
-
-        return output
+                results=50,
+                start='1970-01-01',
+                end=(dt.today() + timedelta(days=1)).strftime('%Y-%m-%d'),
+                pages=1,
+                fields='nextPageToken,items(id(videoId),snippet(publishedAt,channelId,channelTitle,title))'
+                ):
 
     # API client
     youtube = googleapiclient.discovery.build(
@@ -41,7 +32,7 @@ def youtubeSearch(query,
         publishedAfter=start + 'T00:00:00Z',
         publishedBefore=end + 'T23:59:59Z',
         fields=fields
-  ).execute()
+        ).execute()
 
     # Clean response
     data = cleanUp(response)
@@ -64,7 +55,7 @@ def youtubeSearch(query,
                 publishedBefore=end + 'T23:59:59Z',
                 fields=fields,
                 pageToken=response['nextPageToken']
-            ).execute()
+                ).execute()
             # Clean response and add to data
             data += cleanUp(response)
             # Increment counter
