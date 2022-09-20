@@ -41,7 +41,7 @@ def youtubeSearch(query,
         publishedAfter=start + 'T00:00:00Z',
         publishedBefore=end + 'T23:59:59Z',
         fields=fields
-    ).execute()
+  ).execute()
 
     # Clean response
     data = cleanUp(response)
@@ -70,5 +70,8 @@ def youtubeSearch(query,
             # Increment counter
             counter += 1
 
-    return data
+    # Extract video ids
+    ids = [v['videoId'] for v in data]
+
+    return data, ids
 # %%
