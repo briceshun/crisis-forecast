@@ -1,7 +1,7 @@
 #%% API Client Library
 import googleapiclient.discovery
-from setup import *
-from utils import *
+from functions.setup import *
+from functions.utils import *
 
 #%% Youtube Videos API Function
 def youtubeVideos(vidId):

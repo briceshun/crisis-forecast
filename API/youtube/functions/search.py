@@ -2,8 +2,8 @@
 import googleapiclient.discovery
 from datetime import datetime as dt
 from datetime import timedelta
-from setup import *
-from utils import *
+from functions.setup import *
+from functions.utils import *
 
 # %% Youtube Search API Function
 def youtubeSearch(query,
