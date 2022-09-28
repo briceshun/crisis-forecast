@@ -28,7 +28,8 @@
 			"extensions": [
 				"ms-azuretools.vscode-docker",
 				"oderwat.indent-rainbow",
-				"2gua.rainbow-brackets"
+				"2gua.rainbow-brackets",
+				"ZainChen.json"
 			]
 		}
 	}
