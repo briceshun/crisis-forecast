@@ -43,7 +43,7 @@ def youtubeSearch(query: str,
 
     # API functions
     @checkAPI(key)
-    def youtube_search(pageToken=''):
+    def ytSearch(pageToken=''):
         youtube = googleapiclient.discovery.build(
             api_service_name,
             api_version,
@@ -65,15 +65,12 @@ def youtubeSearch(query: str,
         return response
 
     # Initial reponse
-    response = youtube_search()
+    response = ytSearch()
 
     # If function does not return None
     if response:
         # Clean response
-        try:
-            data = cleanUp(response)
-        except noVideos:
-            return None, None
+        data = cleanUp(response)
 
         # Continue requests if more pages required
         if pages > 1:
@@ -82,7 +79,7 @@ def youtubeSearch(query: str,
             # Loop until all pages fetched
             while counter < pages:
                 # API Response
-                response = youtube_search(pageToken=response['nextPageToken'])
+                response = ytSearch(pageToken=response['nextPageToken'])
                 if response:
                     # Clean response and add to data
                     data += cleanUp(response)
@@ -97,4 +94,4 @@ def youtubeSearch(query: str,
         return data, ids
         
     else:
-        return None, None
+        raise noVideos
