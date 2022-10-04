@@ -4,16 +4,18 @@ UTILITIES
 ===================
 User defined functions
 
-- checkAPI  : Try API call and rotate keys if quota limit HTTP error raised
-- cleanUp   : Extract data from response and reshape
+- checkAPI      : Try API call and rotate keys if quota limit HTTP error raised
+- cleanUp       : Extract data from response and reshape
+- createIdStr   : Create list of concatenated ids (max 600 characters) for multiple api queries
 
 """
 
 # %%
 from googleapiclient.errors import HttpError
 from time import sleep
-from models import noVideos
+from models import noVideos, characterLimit
 
+# %%
 def checkAPI(key):
     def decorator(function):
         def wrapper():
@@ -26,10 +28,13 @@ def checkAPI(key):
                     return function()
                 # Server error - retry 2 more times
                 elif err.resp.status in [500, 503]:
-                    for i in range(0,1):
+                    for i in range(0,2):
                         print(f"Retry: {i}")
                         sleep(5)
                         return wrapper(function())
+                # API length exceeds character limit
+                elif err.resp.status == 400:
+                    raise characterLimit
                 # Others
                 else:
                     raise Exception('Unknown Error')
@@ -78,3 +83,25 @@ def cleanUp(data):
                 for item in data['items']:
                     output.append({keys[0]: item[keys[0]]} | item[keys[1]])
         return output
+
+# %%
+def createIdStr(
+    vidId: list,
+    maxLen: int = 600
+    ):
+    output = []
+    # Iterate over ids step by maxLen/concatLen + 1
+    # where concatLen = 11 + 1 (id length + comma) 
+    n = round(maxLen/12)
+    for i in range(0, len(vidId), n):
+        # If last id
+        if i == len(vidId):
+            output.append(vidId[i])
+        # Last batch of ids
+        elif i + n > len(vidId):
+            output.append(','.join(vidId[i:]))
+        # Concat normally for others
+        else:
+            output.append(','.join(vidId[i:i+n]))
+    return output
+# %%
