@@ -12,7 +12,10 @@ import json
 from datetime import datetime, timedelta
 from time import sleep
 from func_search import youtubeSearch
+from func_videos import youtubeVideos
 from models import keys, noVideos
+from models.exceptions import quotaLimit
+from utils import createIdStr
 
 # %% Date Range
 startdate = datetime.strptime('202-12-01', '%Y-%m-%d')
@@ -40,7 +43,7 @@ for i, j in zip (dates, dates1):
         vid, id, dd = ['No videos'], ['No ID'], i
     videos += vid
     ids += id
-    date += dd
+    date.append(dd)
     if counter%50 == 0:
         sleep(5)
     counter += 1
@@ -48,9 +51,29 @@ for i, j in zip (dates, dates1):
 # %% Export data
 dic = {'videos': videos,
        'ids': ids,
-       'dates': date 
+       'dates': date
 }
 with open("data/gamestop_videos.json", "w") as outfile:
     json.dump(dic, outfile)
 
+# %% Get Stats
+# Import data
+f = open ('data/gamestop_videos.json', "r")
+data = json.loads(f.read())
+ids = data['ids']
+
+# %%
+# Get stats
+key = keys()
+stats = []
+idList = createIdStr([i for i in ids if i != 'No ID'])
+for i, idStr in zip(range(0, len(idList)), idList):
+    try:
+        print(f"{i} - Fetching stats for {idStr}")
+        stats += youtubeVideos(vidIdStr=idStr, key=key)
+    except quotaLimit:
+        print("Quota maxed out")
+# %%
+with open("data/gamestop_stats.json", "w") as outfile:
+    json.dump(stats, outfile)
 # %%
