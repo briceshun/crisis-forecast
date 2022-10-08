@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from time import sleep
 from func_search import youtubeSearch
 from func_videos import youtubeVideos
+from func_commentThreads import youtubeCommentThreads
 from models import keys, noVideos
 from models.exceptions import quotaLimit
 from utils import createIdStr
@@ -73,7 +74,16 @@ for i, idStr in zip(range(0, len(idList)), idList):
         stats += youtubeVideos(vidIdStr=idStr, key=key)
     except quotaLimit:
         print("Quota maxed out")
+
 # %%
 with open("data/gamestop_stats.json", "w") as outfile:
     json.dump(stats, outfile)
+
+# %%
+key = keys()
+idx = [i for i in ids if i != 'No ID']
+comments = []
+for i in idx:
+    print(i)
+    comments += youtubeCommentThreads(vidId=i, key=key)
 # %%

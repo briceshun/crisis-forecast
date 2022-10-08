@@ -7,6 +7,7 @@ Custom errors for
 - noVideos          : Raised when no items returned - no videos found for query/date
 - quotaLimit        : Raised when all 12 API key limits are reached
 - characterLimit    : Raised when API character limit exceeded
+- commentsDisabled  : Raised when comments disabled for video
 
 """
 
@@ -20,4 +21,7 @@ class quotaLimit(error):
     pass
 
 class characterLimit(error):
+    pass
+
+class commentsDisabled(error):
     pass

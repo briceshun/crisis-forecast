@@ -11,27 +11,30 @@ User defined functions
 """
 
 # %%
+import json
 from googleapiclient.errors import HttpError
 from time import sleep
-from models import noVideos, characterLimit
+from models import noVideos, characterLimit, commentsDisabled
 
 # %%
 def checkAPI(key):
     def decorator(function):
-        def wrapper():
+        def wrapper(*args, **kwargs):
             try:
-                return function()
+                return function(*args, **kwargs)
             except HttpError as err:
                 # Quota exceeded
-                if err.resp.status == 403:
+                if 'disabled comments' in json.loads(err.content)['error']['errors'][0]['message']:
+                    raise commentsDisabled
+                elif err.resp.status == 403:
                     key.next_key()
-                    return function()
+                    return function(*args, **kwargs)
                 # Server error - retry 2 more times
                 elif err.resp.status in [500, 503]:
                     for i in range(0,2):
                         print(f"Retry: {i}")
                         sleep(5)
-                        return wrapper(function())
+                        return wrapper(function(*args, **kwargs))
                 # API length exceeds character limit
                 elif err.resp.status == 400:
                     raise characterLimit
