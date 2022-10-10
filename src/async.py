@@ -1,50 +1,20 @@
 # %%
 import asyncio
-import pprint
-from datetime import datetime as dt
-from datetime import timedelta
+import json
 from aiogoogle import Aiogoogle
+from googleapiclient.errors import HttpError
+from models import keys
 
 # %%
-api_key = 'AIzaSyAzdfQC7r04viSmZQy3mO0h3ytVpIziM3M'
-
-async def ytSearch(
-    query: str,
-    key: str,
-    results: int = 50,
-    start: str = '1970-01-01',
-    end: str = (dt.today() + timedelta(days=1)).strftime('%Y-%m-%d'),
-    fields: str = 'nextPageToken,items(id(videoId),snippet(publishedAt,channelId,channelTitle,title))'
-    ):
-    async with Aiogoogle(api_key=key) as aiogoogle:
-        youtube = await aiogoogle.discover('youtube', 'v3')
-        result = await aiogoogle.as_api_key(
-            youtube.search.list(
-            part='id,snippet',
-            type='video',
-            regionCode='US',
-            order='relevance',
-            q=query,
-            maxResults=results,
-            publishedAfter=start + 'T00:00:00Z',
-            publishedBefore=end + 'T23:59:59Z',
-            fields=fields
-            )
-        )
-    return result
-
-test = await ytSearch(query='test', key=api_key)
-
-# %%
-async def commentThreads(
+async def ytCommentThreads(
     vidId: str,
-    key: str = api_key,
+    key: str,
     fields: str = 'nextPageToken,items(id,snippet(topLevelComment(snippet(videoId,textDisplay,textOriginal,authorDisplayName,authorChannelId,likeCount,publishedAt,updatedAt))))',
     pageToken: str = ''
     ):
     async with Aiogoogle(api_key=key) as aiogoogle:
         youtube = await aiogoogle.discover('youtube', 'v3')
-        result = await aiogoogle.as_api_key(
+        response = await aiogoogle.as_api_key(
             youtube.commentThreads.list(
                 part="snippet,replies",
                 videoId=vidId,
@@ -53,8 +23,42 @@ async def commentThreads(
                 pageToken=pageToken
                 )
         )
-    return result
+
+    return response
 
 idx = ['3rZAQVJ9JKE', '-rbVOziCluY','KOyvVPc-HvU','rgQnkCWRh9o']
-results = await asyncio.gather(*[commentThreads(i) for i in idx])
+results1 = await asyncio.gather(*[ytCommentThreads(i) for i in idx])
+
+# %%
+async def ytCommentThreadsAll(
+    vidId: str,
+    key: keys,
+    pageToken: str = ''
+    ):
+    result = []
+    while True:
+        try:
+            response = await ytCommentThreads(vidId=vidId, key=key.active_key(), pageToken=pageToken)
+            result += response['items']
+        except HttpError as err:
+            # Quota exceeded
+            if 'disabled comments' in json.loads(err.content)['error']['errors'][0]['message']:
+                break
+            elif err.resp.status == 403:
+                key.next_key()
+                try:
+                    response = await ytCommentThreads(vidId=vidId, key=key.active_key(), pageToken=pageToken)
+                    result += response['items']
+                except:
+                    break
+            else:
+                break
+        if 'nextPageToken' not in response.keys():
+            break
+
+        pageToken = response['nextPageToken']
+
+    return result
+
+results = await asyncio.gather(*[ytCommentThreadsAll(i) for i in idx])
 # %%
