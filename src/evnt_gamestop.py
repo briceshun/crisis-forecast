@@ -8,6 +8,7 @@ EVENT - GAMESTOP
 """
 
 # %%
+import asyncio
 import json
 from datetime import datetime, timedelta
 from time import sleep
@@ -16,10 +17,10 @@ from func_videos import youtubeVideos
 from func_commentThreads import youtubeCommentThreads
 from models import keys, noVideos
 from models.exceptions import quotaLimit
-from utils import createIdStr
+from utils import createIdStr, cleanUp
 
 # %% Date Range
-startdate = datetime.strptime('202-12-01', '%Y-%m-%d')
+startdate = datetime.strptime('2020-12-01', '%Y-%m-%d')
 enddate = datetime.strptime('2021-06-30', '%Y-%m-%d')
 
 dates = []
@@ -80,10 +81,22 @@ with open("data/gamestop_stats.json", "w") as outfile:
     json.dump(stats, outfile)
 
 # %%
+# Import Stats
+f = open ('data/gamestop_stats.json', "r")
+stats = json.loads(f.read())
+idx = []
+for i in stats:
+    try:
+        if int(i['commentCount']) > 10:
+            idx.append(i['id'])
+    except:
+        pass
+
 key = keys()
-idx = [i for i in ids if i != 'No ID']
-comments = []
-for i in idx:
-    print(i)
-    comments += youtubeCommentThreads(vidId=i, key=key)
+
+for i, j in zip(range(0, len(idx), 100), list(range(99, len(idx), 100))+[(len(idx))]):
+    print(f"{i}:{j}")
+    comments = await asyncio.gather(*[youtubeCommentThreads(i, key) for i in idx[i:i+99]])
+    with open(f"data/comments/gamestop_comments_{j}.json", "w") as outfile:
+        json.dump(comments, outfile)
 # %%

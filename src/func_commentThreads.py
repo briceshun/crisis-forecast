@@ -18,63 +18,55 @@ Example:    https://github.com/youtube/api-samples/blob/master/python/commentThr
 """
 
 # %% Modules
-import googleapiclient.discovery
-from models import keys
-from config import *
-from utils import *
+import asyncio
+import json
+from aiogoogle import Aiogoogle
+from googleapiclient.errors import HttpError
+from models import keys, quotaLimit
 
 #%% Youtube CommentThreads API Function
-def youtubeCommentThreads(
+# Initial Response
+async def ytCommentThreads(
     vidId: str,
-    key: keys,
-    fields: str = 'nextPageToken,items(id,snippet(topLevelComment(snippet(videoId,textDisplay,textOriginal,authorDisplayName,authorChannelId,likeCount,publishedAt,updatedAt))))'
-    ) -> list :
-
-    # API functions
-
-    @checkAPI(key)
-    def ytCommentThreads(pageToken = ''):
-        youtube = googleapiclient.discovery.build(
-            api_service_name,
-            api_version,
-            developerKey=key.active_key()
+    key: str,
+    fields: str,
+    pageToken: str
+    ):
+    async with Aiogoogle(api_key=key) as aiogoogle:
+        youtube = await aiogoogle.discover('youtube', 'v3')
+        response = await aiogoogle.as_api_key(
+            youtube.commentThreads.list(
+                part="snippet,replies",
+                videoId=vidId,
+                maxResults=100,
+                fields=fields,
+                pageToken=pageToken
+                )
         )
 
-        response = youtube.commentThreads().list(
-                    part="snippet,replies",
-                    videoId=vidId,
-                    maxResults=100,
-                    fields=fields,
-                    pageToken=pageToken
-                    ).execute()
-        return response
+    return response
 
-    try:
-        # Initial Response
-        response = ytCommentThreads()
+# Pagination Loop
+async def youtubeCommentThreads(
+    vidId: str,
+    key: keys,
+    fields: str = 'nextPageToken,items(id,snippet(topLevelComment(snippet(videoId,textDisplay,textOriginal,authorDisplayName,authorChannelId,likeCount,publishedAt,updatedAt))))',
+    pageToken: str = ''
+    ):
+    result = []
+    counter = 1
+    while True:
+        try:
+            response = await ytCommentThreads(vidId=vidId, key=key.active_key(), fields=fields, pageToken=pageToken)
+            result += response['items']
+            counter += 1
+        except:
+            break
+        if 'nextPageToken' not in response.keys():
+            break
+        if counter >= 10:
+            break
 
-        # Clean response
-        data = cleanUp(response)
-    except commentsDisabled:
-        return [
-            {'videoId': vidId,
-            'textDisplay': 'Comments Disabled',
-            'textOriginal': 'Comments Disabled',
-            'authorDisplayName': 'N/A',
-            'authorChannelId': {'value': 'N/A'},
-            'likeCount': -1,
-            'publishedAt': 'N/A',
-            'updatedAt': 'N/A'
-            }
-        ]
-    except noVideos:
-        return [None]
-    else:
-        # Continue requests if more pages required
-        while 'nextPageToken' in response.keys():
-            # API Response
-            response = ytCommentThreads(pageToken=response['nextPageToken'])
-            # Clean response and add to data
-            data += cleanUp(response)
-    
-    return data
+        pageToken = response['nextPageToken']
+
+    return result
