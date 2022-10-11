@@ -3,7 +3,7 @@ import asyncio
 import json
 from aiogoogle import Aiogoogle
 from googleapiclient.errors import HttpError
-from models import keys
+from models import keys, quotaLimit
 
 # %%
 async def ytCommentThreads(
@@ -45,14 +45,9 @@ async def ytCommentThreadsAll(
             if 'disabled comments' in json.loads(err.content)['error']['errors'][0]['message']:
                 break
             elif err.resp.status == 403:
-                key.next_key()
-                try:
-                    response = await ytCommentThreads(vidId=vidId, key=key.active_key(), pageToken=pageToken)
-                    result += response['items']
-                except:
-                    break
+                raise quotaLimit
             else:
-                break
+                raise Exception('Unknown Error')
         if 'nextPageToken' not in response.keys():
             break
 
