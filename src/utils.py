@@ -7,7 +7,7 @@ User defined functions
 - checkAPI      : Try API call and rotate keys if quota limit HTTP error raised
 - cleanUp       : Extract data from response and reshape
 - createIdStr   : Create list of concatenated ids (max 600 characters) for multiple api queries
-
+- commentProcess: Extract comments from API response
 """
 
 # %%
@@ -107,4 +107,23 @@ def createIdStr(
         else:
             output.append(','.join(vidId[i:i+n]))
     return output
+# %%
+def commentProcess(data):
+    output = []
+    # Loop over asyncs
+    for f in data:
+        # Loop over items
+        for item in f:
+            x = item['snippet']['topLevelComment']['snippet']
+            output += [{
+                'commentid'         : item['id']
+                ,'videoId'          : x['videoId']
+                ,'textDisplay'      : x['textDisplay']
+                ,'textOriginal'     : x['textOriginal']
+                ,'authorDisplayName': x['authorDisplayName']
+                ,'publishedAt'      : x['publishedAt']
+                ,'updatedAt'        : x['updatedAt']
+            }]
+    return output
+
 # %%
