@@ -17,7 +17,7 @@ from func_videos import youtubeVideos
 from func_commentThreads import youtubeCommentThreads
 from models import keys, noVideos
 from models.exceptions import quotaLimit
-from utils import createIdStr, cleanUp
+from utils import createIdStr, commentProcess
 
 # %% Date Range
 startdate = datetime.strptime('2020-12-01', '%Y-%m-%d')
@@ -99,4 +99,25 @@ for i, j in zip(range(0, len(idx), 100), list(range(99, len(idx), 100))+[(len(id
     comments = await asyncio.gather(*[youtubeCommentThreads(i, key) for i in idx[i:i+99]])
     with open(f"data/comments/gamestop_comments_{j}.json", "w") as outfile:
         json.dump(comments, outfile)
+
+# %%
+import os
+import json
+
+counter = 1
+for i in [x for x in os.listdir('data/comments') if x[:8]=='gamestop']:
+    # Read file
+    print(f"{counter} - {i}")
+    f = open ('data/comments/'+i, "r")
+    l = json.loads(f.read())
+
+    # Clean file
+    x = commentProcess(l)
+
+    # Save
+    with open(f"data/comments/processed/gamestop_comments_{counter}.json", "w") as outfile:
+        json.dump(x, outfile)
+    
+    counter += 1
+
 # %%
