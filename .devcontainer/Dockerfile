@@ -19,3 +19,4 @@ WORKDIR /usr/src/app
 # Installing python dependencies
 COPY requirements.txt /usr/src/app/
 RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m spacy download en_core_web_sm

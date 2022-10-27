@@ -8,10 +8,12 @@ User defined functions
 - cleanUp       : Extract data from response and reshape
 - createIdStr   : Create list of concatenated ids (max 600 characters) for multiple api queries
 - commentProcess: Extract comments from API response
+- repeated      : Find repeated strings and get unique values
 """
 
 # %%
 import json
+import re
 from googleapiclient.errors import HttpError
 from time import sleep
 from models import noVideos, characterLimit, commentsDisabled
@@ -125,5 +127,10 @@ def commentProcess(data):
                 ,'updatedAt'        : x['updatedAt']
             }]
     return output
+
+# %%
+def repeated(s):
+    match = re.compile(r"(.+?)\1+$").match(s)
+    return match.group(1) if match else s
 
 # %%
