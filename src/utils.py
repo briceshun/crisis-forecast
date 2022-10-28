@@ -9,13 +9,18 @@ User defined functions
 - createIdStr   : Create list of concatenated ids (max 600 characters) for multiple api queries
 - commentProcess: Extract comments from API response
 - repeated      : Find repeated strings and get unique values
+- textClean     : Clean text string - remove stopwords and lemmatise
+- emotionModel  : Apply emotion model on text 
 """
 
 # %%
 import json
 import re
+import spacy
 from googleapiclient.errors import HttpError
 from time import sleep
+from transformers import pipeline
+
 from models import noVideos, characterLimit, commentsDisabled
 
 # %%
@@ -133,4 +138,27 @@ def repeated(s):
     match = re.compile(r"(.+?)\1+$").match(s)
     return match.group(1) if match else s
 
+# %%
+def textClean(
+    text: str,
+    length: int = 500
+    ) -> str:
+    # Load model
+    sp = spacy.load('en_core_web_sm')
+    # Remove repeated
+    output = repeated(text)
+    # Tokenise, remove stopwords text, and lemmatise
+    stopwords = sp.Defaults.stop_words
+    output = ' '.join([token.lemma_ for token in sp(output) if not token.text in stopwords])
+    # Shorten
+    output = output[:length]
+    return output
+
+# %%
+emotion = pipeline('sentiment-analysis', model='arpanghoshal/EmoRoBERTa')
+
+def emotionModel(
+    text: str
+    ) -> list:
+    return emotion(text)
 # %%
