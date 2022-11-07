@@ -10,14 +10,17 @@ EVENT - GAMESTOP
 # %%
 import asyncio
 import json
+import os
 from datetime import datetime, timedelta
 from time import sleep
+from joblib import Parallel, delayed
+
 from func_search import youtubeSearch
 from func_videos import youtubeVideos
 from func_commentThreads import youtubeCommentThreads
 from models import keys, noVideos
 from models.exceptions import quotaLimit
-from utils import createIdStr, commentProcess
+from utils import createIdStr, commentProcess, textClean, emotionModel
 
 # %% Date Range
 startdate = datetime.strptime('2020-12-01', '%Y-%m-%d')
@@ -121,3 +124,36 @@ for i in [x for x in os.listdir('data/comments') if x[:8]=='gamestop']:
     counter += 1
 
 # %%
+def emotionClean(text):
+    try:
+        output = emotionModel(textClean(text))
+    except:
+        output = [{ 'label': 'error',
+                    'score': 0.0
+                }]
+    return output
+
+files = [x for x in os.listdir('data/comments/processed/') if x[:8]=='gamestop']
+for i in files:
+    # Read file
+    print(i)
+    f = open ('data/comments/processed/'+i, "r")
+    l = json.loads(f.read())
+    f.close()
+
+    # Clean text and add emotion
+    print('emotions')
+    result = Parallel(n_jobs=os.cpu_count(), prefer="threads")(delayed(emotionClean)(i['textDisplay']) for i in l)
+
+    # Append
+    for comment, emote in zip(l, result):
+        comment['emotion'] = emote[0]['label']
+        comment['emotionscore'] = emote[0]['score']
+
+    # Save
+    print('Saving')
+    with open(f"data/comments/processed/{i}", "w") as outfile:
+        json.dump(l, outfile)
+
+
+ # %%

@@ -139,17 +139,15 @@ def repeated(s):
     return match.group(1) if match else s
 
 # %%
+# Load model
+sp = spacy.load('en_core_web_sm')
+stopwords = sp.Defaults.stop_words
 def textClean(
     text: str,
     length: int = 500
     ) -> str:
-    # Load model
-    sp = spacy.load('en_core_web_sm')
-    # Remove repeated
-    output = repeated(text)
     # Tokenise, remove stopwords text, and lemmatise
-    stopwords = sp.Defaults.stop_words
-    output = ' '.join([token.lemma_ for token in sp(output) if not token.text in stopwords])
+    output = ' '.join([token.lemma_ for token in sp(text) if not token.text in stopwords])
     # Shorten
     output = output[:length]
     return output
