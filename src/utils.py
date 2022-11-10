@@ -11,10 +11,12 @@ User defined functions
 - repeated      : Find repeated strings and get unique values
 - textClean     : Clean text string - remove stopwords and lemmatise
 - emotionModel  : Apply emotion model on text 
+- emotionGroup  : DataFrame containing emotion groupings
 """
 
 # %%
 import json
+import pandas
 import re
 import spacy
 from googleapiclient.errors import HttpError
@@ -159,4 +161,50 @@ def emotionModel(
     text: str
     ) -> list:
     return emotion(text)
+
+# %%
+def emotionGroup(
+    emotion: str,
+    valence: bool = False
+    ) -> str:
+    
+    data = {'admiration': ['Affection', 'Positive'],
+            'amusement' : ['Happiness', 'Positive'],
+            'anger' : ['Anger', 'Negative'],
+            'annoyance' : ['Anger', 'Negative'],
+            'approval' : ['Satisfaction', 'Positive'],
+            'caring' : ['Affection', 'Positive'],
+            'confusion' : ['Fear', 'Negative'],
+            'curiosity' : ['Fear', 'Positive'],
+            'desire' : ['Affection', 'Positive'],
+            'disappointment' : ['Depression', 'Negative'],
+            'disapproval' : ['Anger', 'Negative'],
+            'disgust' : ['Contempt', 'Negative'],
+            'embarrassment' : ['Depression', 'Negative'],
+            'excitement' : ['Happiness', 'Positive'],
+            'fear' : ['Fear', 'Negative'],
+            'gratitude' : ['Satisfaction', 'Positive'],
+            'grief' : ['Depression', 'Negative'],
+            'joy' : ['Happiness', 'Positive'],
+            'love' : ['Affection', 'Positive'],
+            'nervousness' : ['Fear', 'Negative'],
+            'optimism' : ['Happiness', 'Positive'],
+            'pride' : ['Affection', 'Positive'],
+            'realization' : ['Satisfaction', 'Positive'],
+            'relief' : ['Happiness', 'Positive'],
+            'remorse' : ['Contempt', 'Negative'],
+            'sadness' : ['Depression', 'Negative'],
+            'surprise' : ['Happiness', 'Positive'],
+            'neutral' : ['Neutral', 'Neutral']
+            }
+    if emotion.lower() == 'error':
+        return 'error'
+    else:
+        if valence:
+            return data[emotion.lower()][1]
+        else:
+            return data[emotion.lower()][0]
+
+
+
 # %%
