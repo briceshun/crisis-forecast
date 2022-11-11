@@ -40,6 +40,9 @@ for k in keys:
         except:
             dict[k].append(np.nan)
 df_stats = pd.DataFrame.from_dict(dict)
+df_stats.fillna(0, inplace=True)
+for col in ['viewCount', 'likeCount', 'commentCount']:
+    df_stats[col] = df_stats[col].astype(int)
 del stats
 
 #%%
@@ -86,15 +89,13 @@ def emotionGroup(
             'remorse' : ['Contempt', 'Negative'],
             'sadness' : ['Depression', 'Negative'],
             'surprise' : ['Happiness', 'Positive'],
-            'neutral' : ['Neutral', 'Neutral']
+            'neutral' : ['Neutral', 'Neutral'],
+            'error' : ['Neutral', 'Neutral']
             }
-    if emotion.lower() == 'error':
-        return 'error'
+    if valence:
+        return data[emotion.lower()][1]
     else:
-        if valence:
-            return data[emotion.lower()][1]
-        else:
-            return data[emotion.lower()][0]
+        return data[emotion.lower()][0]
 
 # Group emotions
 df_comments['emotionraw'] = df_comments['emotion']
@@ -176,4 +177,5 @@ plt.show()
 df_comments_date_sub1 = df_comments_date1[(df_comments_date1['date']>=datetime.date(2022,1,1)) & (df_comments_date1['date']<datetime.date(2022,4,1))]
 df_comments_date_sub1.plot(x='date', kind='bar', stacked=True, legend=None)
 plt.show()
+
 # %%
