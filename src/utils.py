@@ -17,14 +17,15 @@ User defined functions
 - noOutlier     : Clean dataframe by removing outliers
 - describeEvent : Create summary statistics
 - clusterKmeans : Apply KMeans clustering algorithm
+- normalityTest : Check if variables are normally distributed
+- diffTest      : Check if differences are significant
+
 """
 
 # %%
-from copy import deepcopy
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from matplotlib.dates import DateFormatter
 import json
 import pandas as pd
 import numpy as np
@@ -35,7 +36,6 @@ from googleapiclient.errors import HttpError
 from time import sleep
 from transformers import pipeline
 from sklearn.cluster import KMeans
-from sklearn import mixture
 
 from models import noVideos, characterLimit, commentsDisabled
 
@@ -425,3 +425,38 @@ def clusterKMeans(
     plt.xticks(rotation=45)
 
     return ['Phase ' + str(p) for p in [phase_list.index(c)+1 for c in clusters]]
+
+# %%
+def normalityTest(
+    df,
+    cols: list
+    ):
+    return pd.DataFrame({
+        'variable': cols,
+        'pvalue': [shapiro(df[c]) for c in cols]
+        })
+
+# %%
+def diffTest(
+    df,
+    cols: list,
+    n: int = 2
+    ):
+    # Create test pairs
+    pairs = []
+    for i in range(n):
+        pairs.append(['Phase ' + str(i+1), 'Phase ' + str(i+2)])
+
+    # Loop over pairs to test
+    output = {'pair': [p[0] + '-' + p[1] : None for p in pairs]}
+    output |= {c: [] for c in cols}
+
+    for p in pairs:
+        for c in cols:
+            x = df[c][df['phase'] == p[0]]
+            y = df[c][df['phase'] == p[1]]
+            output[c].append(test1111)
+
+    return pd.DataFrame(output)
+
+# %%
