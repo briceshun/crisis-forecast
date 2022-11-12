@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from utils import noOutlier, emotionGroup, describeEvent, plotLine, plotStack
+from utils import noOutlier, emotionGroup, describeEvent, plotLine, plotStack, clusterKMeans
 
 #%%
 # Load Data
@@ -109,6 +109,8 @@ df_comments_valence, df_comments_valence100 = plotStack(df_comments, ['2021-01-0
 
 # %%
 # Clustering
-clusterKMeans(df_comments_emotion, df_comments_emotion100, 3)
+phases = clusterKMeans(df_comments_emotion, df_comments_emotion100, 3)
+df_comments_emotion100['phase'] = phases
+describeEvent(df_comments_emotion100, df_comments_emotion100.columns.drop(['phase', 'date']), clustered = True)
 
 # %%

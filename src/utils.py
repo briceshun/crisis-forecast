@@ -39,6 +39,8 @@ from sklearn import mixture
 
 from models import noVideos, characterLimit, commentsDisabled
 
+pd.set_option('display.max_columns', None)
+
 # %%
 def checkAPI(key):
     def decorator(function):
@@ -344,11 +346,13 @@ def describeEvent(
     df,
     cols: list,
     periods: list = None,
+    clustered: bool = False,
     func: list = ['count', 'mean', 'std', 'var', 'min', 'max']
     ):
     # Overall
     overall = df[cols].agg(func).reset_index()
-    # Phases
+
+    # Periods
     if periods:
         end = max(df['date'])
         # Create phase lists
@@ -371,7 +375,13 @@ def describeEvent(
         phased = df[['phase']+cols].groupby('phase').agg(func).reset_index()
         
         return overall, phased
-    
+
+    # Clusters
+    if clustered:
+        agg_func = {c: ['mean', 'std', 'var', 'min', 'max'] for c in cols}
+        agg_func['date'] = ['min', 'max']
+        return df.groupby('phase').agg(agg_func).reset_index()
+
     return overall
 
 # %%
@@ -406,10 +416,12 @@ def clusterKMeans(
     df_graph = df_select.pivot(index='date', columns='phase', values='total').reset_index()
     
     # Plot
-    plot = df_graph.plot(x = 'date', kind='bar', stacked=True)
+    plot = df_graph.plot(x = 'date', kind='bar', stacked=True, width=1.0)
     plot.set(xlabel=None)
     plot.legend_.set_title(None)
     plot.xaxis.set_major_locator(mdates.WeekdayLocator(interval=2))
     plot.set(ylabel='Total # of Comments')
     plot.yaxis.set_major_formatter(lambda y, p: f'{y/1000:.0f}k')
     plt.xticks(rotation=45)
+
+    return ['Phase ' + str(p) for p in [phase_list.index(c)+1 for c in clusters]]
