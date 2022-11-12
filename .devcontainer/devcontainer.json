@@ -21,7 +21,7 @@
 		"git": "latest",
 		"github-cli": "latest",
 		"sshd": "latest",
-		"python": "3.10"
+		"python": "3.10.7"
 	},
 	"customizations": {
 		"vscode": {
