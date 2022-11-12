@@ -9,3 +9,4 @@ tensorflow==2.10.0
 transformers==4.23.1
 spacy==3.4.2
 joblib==1.2.0
+scikit-learn==1.1.3
