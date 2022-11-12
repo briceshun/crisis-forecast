@@ -16,6 +16,7 @@ User defined functions
 - plotStack     : Create subsetted stacked bar chart
 - noOutlier     : Clean dataframe by removing outliers
 - describeEvent : Create summary statistics
+- clusterKmeans : Apply KMeans clustering algorithm
 """
 
 # %%
@@ -33,6 +34,8 @@ import spacy
 from googleapiclient.errors import HttpError
 from time import sleep
 from transformers import pipeline
+from sklearn.cluster import KMeans
+from sklearn import mixture
 
 from models import noVideos, characterLimit, commentsDisabled
 
@@ -65,8 +68,6 @@ def checkAPI(key):
     return decorator
 
 # %%
-
-
 def cleanUp(data):
     output = []
 
@@ -110,8 +111,6 @@ def cleanUp(data):
         return output
 
 # %%
-
-
 def createIdStr(
     vidId: list,
     maxLen: int = 600
@@ -132,8 +131,6 @@ def createIdStr(
             output.append(','.join(vidId[i:i+n]))
     return output
 # %%
-
-
 def commentProcess(data):
     output = []
     # Loop over asyncs
@@ -147,8 +144,6 @@ def commentProcess(data):
     return output
 
 # %%
-
-
 def repeated(s):
     match = re.compile(r"(.+?)\1+$").match(s)
     return match.group(1) if match else s
@@ -158,7 +153,6 @@ def repeated(s):
 # Load model
 sp = spacy.load('en_core_web_sm')
 stopwords = sp.Defaults.stop_words
-
 
 def textClean(
     text: str,
@@ -174,16 +168,12 @@ def textClean(
 
 # %%
 emotion = pipeline('sentiment-analysis', model='arpanghoshal/EmoRoBERTa')
-
-
 def emotionModel(
     text: str
 ) -> list:
     return emotion(text)
 
 # %%
-
-
 def emotionGroup(
     emotion: str,
     valence: bool = False
@@ -230,8 +220,6 @@ def emotionGroup(
             return data[emotion.lower()][0]
 
 # %%
-
-
 def plotLine(
     df,
     variable: str,
@@ -332,6 +320,8 @@ def plotStack(
     plot_stack100.yaxis.set_major_formatter(lambda y, p: f'{y*100:.0f}'+'%')
     plt.xticks(rotation=45)
 
+    return df_stack, df_stack100
+
 # %%
 def noOutlier(
     df,
@@ -385,3 +375,41 @@ def describeEvent(
     return overall
 
 # %%
+def clusterKMeans(
+    df,
+    df100,
+    k: int = 3
+    ):
+    # Clean input data
+    x = df100[df100.columns.drop('date')]
+    df_input = df[df.columns.drop('date')].reset_index()
+
+    # Cluster
+    kmeans = KMeans(n_clusters=k).fit(x)
+    clusters = kmeans.predict(x)
+
+    # Create df for graph
+    df_input['total'] = df_input[df_input.columns.drop('index')].sum(axis=1)
+    df_input['clusters'] = clusters
+    df_select = df_input[['total', 'clusters']]
+    df_select['date'] = df['date']
+    # Reorder Clusters
+    phase_list = []
+    for c in clusters:
+        if len(phase_list) == k:
+            break
+        else:
+            if c not in phase_list:
+                phase_list.append(c)
+    df_select['phase'] = ['Phase ' + str(p) for p in [phase_list.index(c)+1 for c in clusters]]
+    # Pivot
+    df_graph = df_select.pivot(index='date', columns='phase', values='total').reset_index()
+    
+    # Plot
+    plot = df_graph.plot(x = 'date', kind='bar', stacked=True)
+    plot.set(xlabel=None)
+    plot.legend_.set_title(None)
+    plot.xaxis.set_major_locator(mdates.WeekdayLocator(interval=2))
+    plot.set(ylabel='Total # of Comments')
+    plot.yaxis.set_major_formatter(lambda y, p: f'{y/1000:.0f}k')
+    plt.xticks(rotation=45)
