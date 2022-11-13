@@ -36,6 +36,7 @@ from googleapiclient.errors import HttpError
 from time import sleep
 from transformers import pipeline
 from sklearn.cluster import KMeans
+from scipy.stats import shapiro, levene, ttest_ind, mannwhitneyu
 
 from models import noVideos, characterLimit, commentsDisabled
 
@@ -388,7 +389,8 @@ def describeEvent(
 def clusterKMeans(
     df,
     df100,
-    k: int = 3
+    k: int = 3,
+    interval: int = 2
     ):
     # Clean input data
     x = df100[df100.columns.drop('date')]
@@ -419,7 +421,7 @@ def clusterKMeans(
     plot = df_graph.plot(x = 'date', kind='bar', stacked=True, width=1.0)
     plot.set(xlabel=None)
     plot.legend_.set_title(None)
-    plot.xaxis.set_major_locator(mdates.WeekdayLocator(interval=2))
+    plot.xaxis.set_major_locator(mdates.WeekdayLocator(interval=interval))
     plot.set(ylabel='Total # of Comments')
     plot.yaxis.set_major_formatter(lambda y, p: f'{y/1000:.0f}k')
     plt.xticks(rotation=45)
@@ -433,29 +435,45 @@ def normalityTest(
     ):
     return pd.DataFrame({
         'variable': cols,
-        'pvalue': [shapiro(df[c]) for c in cols]
+        'pvalue': [shapiro(df[c]).pvalue for c in cols]
         })
 
 # %%
 def diffTest(
     df,
-    cols: list,
+    df_norm,
     n: int = 2
     ):
     # Create test pairs
+    cols = list(df_norm['variable'])
+    normal = list(df_norm['normal'])
     pairs = []
-    for i in range(n):
-        pairs.append(['Phase ' + str(i+1), 'Phase ' + str(i+2)])
+    for i in range(1, n+1):
+        for j in range(1, n+1):
+            if i < j:
+                phase_label = ['Phase ' + str(i), 'Phase ' + str(j)]
+                if phase_label not in pairs:
+                    pairs.append(phase_label)
 
     # Loop over pairs to test
-    output = {'pair': [p[0] + '-' + p[1] : None for p in pairs]}
+    output = {'pair': [p[0] + '-' + p[1] for p in pairs]}
     output |= {c: [] for c in cols}
 
     for p in pairs:
-        for c in cols:
+        for c, n in zip(cols, normal):
             x = df[c][df['phase'] == p[0]]
             y = df[c][df['phase'] == p[1]]
-            output[c].append(test1111)
+            # Normal
+            if n == 1:
+                # Check equal variance
+                if levene(x, y, center='mean').pvalue < 0.05:
+                    output[c].append(ttest_ind(a=x, b=y, equal_var=True).pvalue)
+                else:
+                    output[c].append(ttest_ind(a=x, b=y, equal_var=False).pvalue)
+            # Non parametric
+            else:
+                stat, pval = mannwhitneyu(x, y)
+                output[c].append(pval)
 
     return pd.DataFrame(output)
 
