@@ -8,14 +8,13 @@ EXPLORATION - GAMESTOP
 """
 #%%
 # Import Libraries
-import datetime
-import seaborn as sns
 import json
 import os
-import pandas as pd
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
-#from utils import emotionGroup
+import seaborn as sns
+from utils import noOutlier, emotionGroup, describeEvent, plotLine, plotStack, clusterKMeans, normalityTest, diffTest
 
 #%%
 # Load Data
@@ -40,6 +39,9 @@ for k in keys:
         except:
             dict[k].append(np.nan)
 df_stats = pd.DataFrame.from_dict(dict)
+df_stats.fillna(0, inplace=True)
+for col in ['viewCount', 'likeCount', 'favoriteCount', 'commentCount']:
+    df_stats[col] = df_stats[col].astype(int)
 del stats
 
 #%%
@@ -54,48 +56,6 @@ del comments
 del keys
 
 #%%
-def emotionGroup(
-    emotion: str,
-    valence: bool = False
-    ) -> str:
-    
-    data = {'admiration': ['Affection', 'Positive'],
-            'amusement' : ['Happiness', 'Positive'],
-            'anger' : ['Anger', 'Negative'],
-            'annoyance' : ['Anger', 'Negative'],
-            'approval' : ['Satisfaction', 'Positive'],
-            'caring' : ['Affection', 'Positive'],
-            'confusion' : ['Fear', 'Negative'],
-            'curiosity' : ['Fear', 'Negative'],
-            'desire' : ['Fear', 'Negative'],
-            'disappointment' : ['Depression', 'Negative'],
-            'disapproval' : ['Anger', 'Negative'],
-            'disgust' : ['Contempt', 'Negative'],
-            'embarrassment' : ['Depression', 'Negative'],
-            'excitement' : ['Happiness', 'Positive'],
-            'fear' : ['Fear', 'Negative'],
-            'gratitude' : ['Satisfaction', 'Positive'],
-            'grief' : ['Depression', 'Negative'],
-            'joy' : ['Happiness', 'Positive'],
-            'love' : ['Affection', 'Positive'],
-            'nervousness' : ['Fear', 'Negative'],
-            'optimism' : ['Happiness', 'Positive'],
-            'pride' : ['Affection', 'Positive'],
-            'realization' : ['Satisfaction', 'Positive'],
-            'relief' : ['Happiness', 'Positive'],
-            'remorse' : ['Contempt', 'Negative'],
-            'sadness' : ['Depression', 'Negative'],
-            'surprise' : ['Happiness', 'Positive'],
-            'neutral' : ['Neutral', 'Neutral']
-            }
-    if emotion.lower() == 'error':
-        return 'error'
-    else:
-        if valence:
-            return data[emotion.lower()][1]
-        else:
-            return data[emotion.lower()][0]
-
 # Group emotions
 df_comments['emotionraw'] = df_comments['emotion']
 df_comments['emotion'] = df_comments['emotionraw'].apply(lambda x: emotionGroup(x))
@@ -104,11 +64,17 @@ df_comments['valence'] = df_comments['emotionraw'].apply(lambda x: emotionGroup(
 # %%
 # Add dates to stats
 df_vid_stats = df_videos.merge(df_stats, how='left', left_on='videoId', right_on='id')
+df_vid_stats = noOutlier(df_vid_stats, ['viewCount', 'likeCount', 'commentCount'])
+
+# Describe
+desc_vid_stats = describeEvent(df_vid_stats, ['viewCount', 'likeCount', 'commentCount'])
+desc_vid_stats
 
 # %%
 # Convert columns
 df_vid_stats['publishedAt']= pd.to_datetime(df_vid_stats['publishedAt'])
 df_vid_stats['date'] = df_vid_stats['publishedAt'].dt.date
+#df_vid_stats['week'] = df_vid_stats['publishedAt'].apply(lambda x: x - datetime.timedelta(days=x.weekday()))
 
 for col in ['viewCount', 'likeCount', 'favoriteCount', 'commentCount']:
     df_vid_stats[col] = pd.to_numeric(df_vid_stats[col])
@@ -127,8 +93,7 @@ df_vid_stats_date = df_vid_stats.groupby('date')\
                                 .reset_index()
 
 # Plot total views each day
-df_vid_stats_date_sub = df_vid_stats_date[(df_vid_stats_date['date']>=datetime.date(2020,12,1)) & (df_vid_stats_date['date']<datetime.date(2021,4,1))]
-sns.lineplot(x="date", y="commentSum", data=df_vid_stats_date_sub)
+plotLine(df_vid_stats_date, 'commentSum', ['2020-12-01', '2021-04-01'])
 
 # %%
 # Convert columns
@@ -136,43 +101,37 @@ df_comments['publishedAt']= pd.to_datetime(df_comments['publishedAt'])
 df_comments['date'] = df_comments['publishedAt'].dt.date
 
 # Summarise comment emotions
-df_comments_date = df_comments[df_comments['emotion'] != 'Neutral'][['date', 'emotion']]\
-                    .groupby('date')['emotion']\
-                    .value_counts(normalize=False)\
-                    .unstack('emotion')\
-                    .reset_index()
-df_comments_date1 = df_comments[df_comments['emotion'] != 'Neutral'][['date', 'emotion']]\
-                    .groupby('date')['emotion']\
-                    .value_counts(normalize=True)\
-                    .unstack('emotion')\
-                    .reset_index()
-
-# # Create stacked bar chart
-df_comments_date_sub = df_comments_date[(df_comments_date['date']>=datetime.date(2021,1,15)) & (df_comments_date['date']<datetime.date(2021,4,1))]
-df_comments_date_sub.plot(x='date', kind='bar', stacked=True)
-plt.show()
-df_comments_date_sub1 = df_comments_date1[(df_comments_date1['date']>=datetime.date(2021,1,15)) & (df_comments_date1['date']<datetime.date(2021,4,1))]
-df_comments_date_sub1.plot(x='date', kind='bar', stacked=True, legend=None)
-plt.show()
+df_comments_emotion, df_comments_emotion100 = plotStack(df_comments, ['2021-01-01', '2021-02-28'])
 
 # %%
 # Summarise comment valence
-df_comments_date = df_comments[df_comments['valence'] != 'Neutral'][['date', 'valence']]\
-                    .groupby('date')['valence']\
-                    .value_counts(normalize=False)\
-                    .unstack('valence')\
-                    .reset_index()
-df_comments_date1 = df_comments[df_comments['valence'] != 'Neutral'][['date', 'valence']]\
-                    .groupby('date')['valence']\
-                    .value_counts(normalize=True)\
-                    .unstack('valence')\
-                    .reset_index()
+df_comments_valence, df_comments_valence100 = plotStack(df_comments, ['2021-01-01', '2021-02-28'], valence=True)
 
-# # Create stacked bar chart
-df_comments_date_sub = df_comments_date[(df_comments_date['date']>=datetime.date(2021,1,15)) & (df_comments_date['date']<datetime.date(2021,4,1))]
-df_comments_date_sub.plot(x='date', kind='bar', stacked=True)
-plt.show()
-df_comments_date_sub1 = df_comments_date1[(df_comments_date1['date']>=datetime.date(2021,1,15)) & (df_comments_date1['date']<datetime.date(2021,4,1))]
-df_comments_date_sub1.plot(x='date', kind='bar', stacked=True, legend=None)
-plt.show()
+# %%
+# Clustering
+phases = clusterKMeans(df_comments_emotion.fillna(0), df_comments_emotion100.fillna(0), 5)
+df_comments_emotion100['phase'] = phases
+describeEvent(df_comments_emotion100, df_comments_emotion100.columns.drop(['phase', 'date']), clustered = True)
+
+# %%
+# Normality Test
+norm = normalityTest(df_comments_emotion100, df_comments_emotion100.columns.drop(['date', 'phase']))
+pval = 0.05
+def normalmarker(x, p):
+    if x < p:
+        return 1
+    else:
+        return 0
+norm['normal'] = norm['pvalue'].apply(lambda x: normalmarker(x, pval))
+
+# Hypothesis
+diffTest(df_comments_emotion100, norm, 5)
+
+# %%
+df_emotion_selected = df_comments_emotion100[df_comments_emotion100.columns.drop(['Contempt', 'Depression', 'Satisfaction'])]
+df_emotion_selected_long = pd.melt(df_emotion_selected, id_vars=['date', 'phase'], value_vars=df_emotion_selected.columns.drop('date'))
+sns.catplot(
+    data=df_emotion_selected_long, x='phase', y='value',
+    col='emotion', kind='box', col_wrap=4
+    )
 # %%
