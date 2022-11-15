@@ -237,8 +237,9 @@ def plotLine(
         df_subset = df
 
     # Create plot
+    sns.set(rc={'figure.figsize':(11.7,3.27)})
+    sns.set_style(style='white') 
     plot = sns.lineplot(x='date', y=variable, data=df_subset)
-
     # Formatting
     # x-axis
     plot.set(xlabel=None)

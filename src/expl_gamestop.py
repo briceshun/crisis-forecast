@@ -132,6 +132,6 @@ df_emotion_selected = df_comments_emotion100[df_comments_emotion100.columns.drop
 df_emotion_selected_long = pd.melt(df_emotion_selected, id_vars=['date', 'phase'], value_vars=df_emotion_selected.columns.drop('date'))
 sns.catplot(
     data=df_emotion_selected_long, x='phase', y='value',
-    col='emotion', kind='box', col_wrap=4
+    col='emotion', kind='box', col_wrap=2
     )
 # %%

@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from utils import noOutlier, emotionGroup, describeEvent, plotLine, plotStack, clusterKMeans
+from utils import noOutlier, emotionGroup, describeEvent, plotLine, plotStack, clusterKMeans, normalityTest, diffTest
 
 #%%
 # Load Data
@@ -93,7 +93,7 @@ df_vid_stats_date = df_vid_stats.groupby('date')\
                                 .reset_index()
 
 # Plot total views each day
-plotLine(df_vid_stats_date, 'commentSum', ['2021-12-01', '2022-04-01'])
+plotLine(df_vid_stats_date, 'commentSum', ['2021-12-01', '2022-06-01'])
 
 # %%
 # Convert columns
@@ -101,11 +101,11 @@ df_comments['publishedAt']= pd.to_datetime(df_comments['publishedAt'])
 df_comments['date'] = df_comments['publishedAt'].dt.date
 
 # Summarise comment emotions
-df_comments_emotion, df_comments_emotion100 = plotStack(df_comments, ['2021-01-01', '2022-04-01'])
+df_comments_emotion, df_comments_emotion100 = plotStack(df_comments, ['2021-12-01', '2022-04-30'])
 
 # %%
 # Summarise comment valence
-df_comments_valence, df_comments_valence100 = plotStack(df_comments, ['2021-01-01', '2022-04-01'], valence=True)
+df_comments_valence, df_comments_valence100 = plotStack(df_comments, ['2021-12-01', '2022-04-30'], valence=True)
 
 # %%
 # Clustering
@@ -113,4 +113,25 @@ phases = clusterKMeans(df_comments_emotion, df_comments_emotion100, 3)
 df_comments_emotion100['phase'] = phases
 describeEvent(df_comments_emotion100, df_comments_emotion100.columns.drop(['phase', 'date']), clustered = True)
 
+# %%
+# Normality Test
+norm = normalityTest(df_comments_emotion100, df_comments_emotion100.columns.drop(['date', 'phase']))
+pval = 0.05
+def normalmarker(x, p):
+    if x < p:
+        return 1
+    else:
+        return 0
+norm['normal'] = norm['pvalue'].apply(lambda x: normalmarker(x, pval))
+
+# Hypothesis
+diffTest(df_comments_emotion100, norm, 3)
+
+# %%
+df_emotion_selected = df_comments_emotion100[df_comments_emotion100.columns.drop(['Contempt', 'Depression', 'Satisfaction'])]
+df_emotion_selected_long = pd.melt(df_emotion_selected, id_vars=['date', 'phase'], value_vars=df_emotion_selected.columns.drop('date'))
+sns.catplot(
+    data=df_emotion_selected_long, x='phase', y='value',
+    col='emotion', kind='box', col_wrap=2
+    )
 # %%
