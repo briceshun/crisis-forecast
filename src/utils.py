@@ -26,6 +26,7 @@ User defined functions
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from  matplotlib.ticker import PercentFormatter
 import json
 import pandas as pd
 import numpy as np
@@ -237,7 +238,7 @@ def plotLine(
         df_subset = df
 
     # Create plot
-    sns.set(rc={'figure.figsize':(11.7,3.27)})
+    #sns.set(rc={'figure.figsize':(11.7,3.27)})
     sns.set_style(style='white') 
     plot = sns.lineplot(x='date', y=variable, data=df_subset)
     # Formatting
@@ -255,7 +256,8 @@ def plotStack(
     df,
     period: list = [],
     emotions: list = [],
-    valence: bool = False
+    valence: bool = False,
+    width: float = 1.0
     ):
 
     # Assign colours to emotions and valence
@@ -311,14 +313,14 @@ def plotStack(
         colourMap = [mapper[e] for e in mapper if e != 'Neutral']
 
     # Create plot
-    plot_stack = df_stack[orderCol].plot(x='date', kind='bar', stacked=True, color=colourMap, width=1.0)
+    plot_stack = df_stack[orderCol].plot(x='date', kind='bar', stacked=True, color=colourMap, width=width)
     plot_stack.set(xlabel=None)
     plot_stack.legend_.set_title(None)
     plot_stack.xaxis.set_major_locator(mdates.WeekdayLocator(interval=2))
     plot_stack.yaxis.set_major_formatter(lambda y, p: f'{y/1000:.0f}k')
     plt.xticks(rotation=45)
 
-    plot_stack100 = df_stack100[orderCol].plot(x='date', kind='bar', stacked=True, color=colourMap, legend=None, width=1.0)
+    plot_stack100 = df_stack100[orderCol].plot(x='date', kind='bar', stacked=True, color=colourMap, legend=None, width=width)
     plot_stack100.set(xlabel=None)
     plot_stack100.xaxis.set_major_locator(mdates.WeekdayLocator(interval=2))
     plot_stack100.yaxis.set_major_formatter(lambda y, p: f'{y*100:.0f}'+'%')
@@ -479,3 +481,18 @@ def diffTest(
     return pd.DataFrame(output)
 
 # %%
+def plotBox(
+    df,
+    wrap: int = 2
+    ):
+    sns.set(font_scale=1.25)
+    sns.set_style(style='white') 
+    g = sns.catplot(
+        data=df, x='phase', y='value',
+        col='emotion', kind='box', col_wrap = wrap
+        )
+    for ax in g.axes.flat:
+        ax.yaxis.set_major_formatter(PercentFormatter(1))
+    g.set(xlabel=None)
+    g.set(ylabel="Overall Proportion")
+    plt.show()

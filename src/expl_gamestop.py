@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from utils import noOutlier, emotionGroup, describeEvent, plotLine, plotStack, clusterKMeans, normalityTest, diffTest
+from utils import noOutlier, emotionGroup, describeEvent, plotLine, plotStack, clusterKMeans, normalityTest, diffTest, plotBox
 
 #%%
 # Load Data
@@ -128,10 +128,8 @@ norm['normal'] = norm['pvalue'].apply(lambda x: normalmarker(x, pval))
 diffTest(df_comments_emotion100, norm, 5)
 
 # %%
+# Boxplots
 df_emotion_selected = df_comments_emotion100[df_comments_emotion100.columns.drop(['Contempt', 'Depression', 'Satisfaction'])]
 df_emotion_selected_long = pd.melt(df_emotion_selected, id_vars=['date', 'phase'], value_vars=df_emotion_selected.columns.drop('date'))
-sns.catplot(
-    data=df_emotion_selected_long, x='phase', y='value',
-    col='emotion', kind='box', col_wrap=2
-    )
+plotBox(df_emotion_selected_long)
 # %%
