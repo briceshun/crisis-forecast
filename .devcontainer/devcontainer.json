@@ -21,14 +21,15 @@
 		"git": "latest",
 		"github-cli": "latest",
 		"sshd": "latest",
-		"python": "3.10"
+		"python": "3.10.7"
 	},
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"ms-azuretools.vscode-docker",
 				"oderwat.indent-rainbow",
-				"2gua.rainbow-brackets"
+				"2gua.rainbow-brackets",
+				"ZainChen.json"
 			]
 		}
 	}
